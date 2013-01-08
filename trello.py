@@ -1,10 +1,10 @@
 #!/usr/bin/env python
-
 import argparse
-from colorama import init, Fore
 import json
 import os
 import requests
+
+from colorama import init, Fore
 
 API_KEY = 'a65c7d23c318237578a5f27c76c74f8e'
 API_URL = 'https://api.trello.com/1/'
@@ -18,6 +18,8 @@ class TrelloClient:
 
     def __init__(self):
         self._config = {}
+        self._boards = {}
+        self._orgs = {}
 
     def read_config(self):
         if os.path.isfile(CONFIG):
@@ -25,6 +27,54 @@ class TrelloClient:
             self._config = json.loads(config_file.read())
         else:
             raise NoConfigException('Configuration file does not exists.')
+
+    def list_boards(self, org=None):
+        if not org:
+            url = 'members/my/boards?filter=open&key=%s&token=%s' % (API_KEY,
+                self._config['token'])
+        else:
+            url = 'organization/%s/boards?filter=open&key=%s&token=%s' % (org,
+                API_KEY, self._config['token'])
+
+        r = requests.get('%s%s' % (API_URL, url))
+        print Fore.GREEN + 'Boards' + Fore.RESET
+        for board in r.json():
+            print '  ' + board['name'] + ' (' + \
+                self.get_org(board['idOrganization'])['displayName'] + ')'
+
+    def list_orgs(self, should_print=True):
+        self._orgs = {}
+
+        r = requests.get('%smembers/my/organizations?key=%s&token=%s' % (
+            API_URL, API_KEY, self._config['token']))
+
+        if should_print:
+            print Fore.GREEN + 'Organizations' + Fore.RESET
+            print '  %-15s %s' % ('Board Name', 'Board Display Name')
+            print '  %-15s %s' % ('----------', '------------------')
+
+        for org in r.json():
+            self._orgs[org['id']] = {
+                'name': org['name'],
+                'displayName': org['displayName']
+            }
+            if should_print:
+                print '  %-15s %s' % (org['name'], org['displayName'])
+
+        return self._orgs
+
+    def get_org(self, org_id=None):
+        try:
+            return self._orgs[org_id]
+        except KeyError:
+            r = requests.get('%sorganizations/%s?key=%s&token=%s' % (API_URL,
+                org_id, API_KEY, self._config['token']))
+            org = r.json()
+            self._orgs[org['id']] = {
+                'name': org['name'],
+                'displayName': org['displayName']
+            }
+            return self._orgs[org['id']]
 
     def setup(self):
         """Set up the client for configuration"""
@@ -45,28 +95,28 @@ class TrelloClient:
     def run(self):
         parser = argparse.ArgumentParser()
         subparsers = parser.add_subparsers(help='commands')
-        board_parser = subparsers.add_parser('board', help='Board operations')
+        board_parser = subparsers.add_parser('boards', help='Board operations')
         board_parser.add_argument('-o', '--org', action='store', help='''List
             boards for specific organizations''')
         board_parser.set_defaults(which='board')
+
+        org_parser = subparsers.add_parser('orgs', help='List organizations')
+        org_parser.set_defaults(which='org')
 
         config_parser = subparsers.add_parser('reconfig',
                 help='Reconfigure the client')
         config_parser.set_defaults(which='reconfig')
 
-
-        """parser.add_argument('boards', help='List all boards',
-                action='store_false')
-        parser.add_argument('reconfig', help='Reconfigure the client',
-                action='store_false')
-        parser.add_argument('--all', help='Show all cards',
-                action='store_false')"""
         options = parser.parse_args()
 
         if not os.path.isfile(CONFIG) or options.which is 'reconfig':
             self.setup()
-
-        self.read_config()
+        elif options.which is 'board':
+            self.read_config()
+            self.list_boards()
+        elif options.which is 'org':
+            self.read_config()
+            self.list_orgs()
 
 
 if __name__ == '__main__':
