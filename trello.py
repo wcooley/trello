@@ -2,7 +2,11 @@
 import argparse
 import json
 import os
+
 import requests
+if requests.__version__ < '1':
+    raise ImportError('requests v{0} too old'.format(requests.__version__) +
+        '; at least 1.0.0 required')
 
 from colorama import init, Fore
 
