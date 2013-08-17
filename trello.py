@@ -24,6 +24,8 @@ API_URL = 'https://api.trello.com/1/'
 APP_NAME = 'trello-cmd'
 CONFIG = os.path.join(os.environ['HOME'], '.trello')
 
+from pprint import pprint
+
 class NoConfigException(Exception):
     pass
 
