@@ -126,13 +126,13 @@ class TrelloClient:
                 help='Reconfigure the client')
         config_parser.set_defaults(func=self.cmd_setup)
 
-        options = parser.parse_args()
+        args = parser.parse_args()
 
         if not os.path.isfile(CONFIG):
-            self.cmd_setup(options)
+            self.cmd_setup(args)
         else:
             self.read_config()
-            options.func(options)
+            args.func(args)
 
 
 if __name__ == '__main__':
