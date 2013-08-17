@@ -143,6 +143,21 @@ class TrelloClient:
             }
             return self._orgs[org['id']]
 
+
+    def get_lists(self, boardid):
+        r = self.get('boards/{0}/lists/open'.format(boardid))
+
+        return [ (l['id'], l['name']) for l in self.get_json(r) ]
+
+    # Command line sub-commands
+    def cmd_list_list(self, options):
+        bid = options.boardid
+
+        print Fore.GREEN + 'Lists for board ID {0}'.format(bid) + Fore.RESET
+
+        for tlist in self.get_lists(bid):
+            print ' {1:<25} [{0}]'.format(*tlist)
+
     def cmd_card_list(self, options):
         print Fore.GREEN + 'Cards' + Fore.RESET
 
@@ -214,6 +229,13 @@ class TrelloClient:
         card_list.add_argument('-b', '--board', action='store', required=True,
             help='Limit to cards on board')
         card_list.set_defaults(func=self.cmd_card_list)
+
+        list_parser = subparsers.add_parser('list', help='board lists')
+        list_subparser = list_parser.add_subparsers(help='list commands')
+
+        list_list = list_subparser.add_parser('list', help='List lists')
+        list_list.add_argument('boardid', action='store', help='ID of board')
+        list_list.set_defaults(func=self.cmd_list_list)
 
         config_parser = subparsers.add_parser('reconfig',
                 help='Reconfigure the client')
