@@ -117,25 +117,22 @@ class TrelloClient:
         board_parser = subparsers.add_parser('boards', help='Board operations')
         board_parser.add_argument('-o', '--org', action='store', help='''List
             boards for specific organizations''')
-        board_parser.set_defaults(which='board')
+        board_parser.set_defaults(func=self.cmd_board_list)
 
         org_parser = subparsers.add_parser('orgs', help='List organizations')
-        org_parser.set_defaults(which='org')
+        org_parser.set_defaults(func=self.cmd_org_list)
 
         config_parser = subparsers.add_parser('reconfig',
                 help='Reconfigure the client')
-        config_parser.set_defaults(which='reconfig')
+        config_parser.set_defaults(func=self.cmd_setup)
 
         options = parser.parse_args()
 
-        if not os.path.isfile(CONFIG) or options.which is 'reconfig':
+        if not os.path.isfile(CONFIG):
             self.cmd_setup(options)
-        elif options.which is 'board':
+        else:
             self.read_config()
-            self.cmd_board_list(options)
-        elif options.which is 'org':
-            self.read_config()
-            self.cmd_org_list(options)
+            options.func(options)
 
 
 if __name__ == '__main__':
