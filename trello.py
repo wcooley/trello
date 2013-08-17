@@ -41,6 +41,14 @@ class TrelloClient:
         else:
             raise NoConfigException('Configuration file does not exists.')
 
+    def furl(self, url):
+        """ Build a full URL by prepending API_URL
+        """
+        if not url.startswith('http'):
+            url = API_URL + url
+
+        return url
+
     def list_boards(self, org=None):
         if not org:
             url = 'members/my/boards?filter=open&key=%s&token=%s' % (API_KEY,
@@ -49,7 +57,7 @@ class TrelloClient:
             url = 'organization/%s/boards?filter=open&key=%s&token=%s' % (org,
                 API_KEY, self._config['token'])
 
-        r = requests.get('%s%s' % (API_URL, url))
+        r = requests.get(self.furl(url))
         print Fore.GREEN + 'Boards' + Fore.RESET
         for board in r.json():
             print '  ' + board['name'] + ' (' + \
@@ -58,8 +66,8 @@ class TrelloClient:
     def list_orgs(self, should_print=True):
         self._orgs = {}
 
-        r = requests.get('%smembers/my/organizations?key=%s&token=%s' % (
-            API_URL, API_KEY, self._config['token']))
+        r = requests.get(self.furl('members/my/organizations?key=%s&token=%s' % (
+            API_KEY, self._config['token'])))
 
         if should_print:
             print Fore.GREEN + 'Organizations' + Fore.RESET
@@ -80,8 +88,8 @@ class TrelloClient:
         try:
             return self._orgs[org_id]
         except KeyError:
-            r = requests.get('%sorganizations/%s?key=%s&token=%s' % (API_URL,
-                org_id, API_KEY, self._config['token']))
+            r = requests.get(self.furl('organizations/%s?key=%s&token=%s' % (
+                org_id, API_KEY, self._config['token'])))
             org = r.json()
             self._orgs[org['id']] = {
                 'name': org['name'],
@@ -100,8 +108,8 @@ class TrelloClient:
         if os.path.isfile(CONFIG):
             os.remove(CONFIG)
 
-        auth_url = '%sauthorize?key=%s&name=%s&expiration=never&response_type='\
-                'token&scope=read,write' % (API_URL, API_KEY, APP_NAME)
+        auth_url = self.furl('authorize?key=%s&name=%s&expiration=never&response_type='\
+                'token&scope=read,write' % (API_KEY, APP_NAME))
         print 'Open %s in your web browser' % auth_url
         token = raw_input('Paste the token: ')
 
