@@ -164,7 +164,16 @@ class TrelloClient:
 
         auth_url = self.furl('authorize?key={0}&name={1}&expiration=never&response_type='\
                 'token&scope=read,write'.format(API_KEY, APP_NAME))
-        print 'Open {0} in your web browser'.format(auth_url)
+
+        if os.sys.platform == 'darwin':
+            os.system("open '{0}'".format(auth_url))
+        elif os.sys.platform == 'linux2':
+            r = os.system("xdg-open '{0}'".format(auth_url))
+            if r > 0:
+                print 'Open "{0}" in your web browser'.format(auth_url)
+        else:
+            print 'Open "{0}" in your web browser'.format(auth_url)
+
         token = raw_input('Paste the token: ')
 
         config_file = open(CONFIG, 'w')
