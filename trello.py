@@ -104,25 +104,22 @@ class TrelloClient:
 
             yield((org_info, board_name, board_id))
 
-    def list_orgs(self, should_print=True):
-        self._orgs = {}
+    def get_orgs(self):
 
-        r = self.get('members/my/organizations')
+        if len(self._orgs) == 0:
+            r = self.get('members/my/organizations')
 
-        if should_print:
-            print Fore.GREEN + 'Organizations' + Fore.RESET
-            print '  %-15s %s' % ('Board Name', 'Board Display Name')
-            print '  %-15s %s' % ('----------', '------------------')
+            for org in self.get_json(r):
+                self._orgs[org['id']] = {
+                    'name': org['name'],
+                    'displayName': org['displayName']
+                }
 
-        for org in self.get_json(r):
-            self._orgs[org['id']] = {
-                'name': org['name'],
-                'displayName': org['displayName']
-            }
-            if should_print:
-                print '  %-15s %s' % (org['name'], org['displayName'])
+                yield (org['id'], org['name'], org['displayName'])
+        else:
+            for orgid in self._orgs:
+                yield (orgid, self.orgs[orgid]['name'], self.orgs[orgid]['displayName'])
 
-        return self._orgs
 
     def get_org(self, org_id=None):
         if not org_id:
@@ -152,7 +149,13 @@ class TrelloClient:
             print '  {1}{0} [{2}]'.format(org_name, *board[1:])
 
     def cmd_org_list(self, options):
-        self.list_orgs()
+
+        print Fore.GREEN + 'Organizations' + Fore.RESET
+        print '  {0:<15} {1}'.format('Board Name', 'Board Display Name')
+        print '  {0:<15} {1}'.format('----------', '------------------')
+
+        for org in self.get_orgs():
+            print '  {0:<15s} {1}'.format(*org[1:])
 
     def cmd_setup(self, options):
         """Set up the client for configuration"""
