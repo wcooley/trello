@@ -89,7 +89,13 @@ class TrelloClient:
             }
             return self._orgs[org['id']]
 
-    def setup(self):
+    def cmd_board_list(self, options):
+        self.list_boards(org=options.org)
+
+    def cmd_org_list(self, options):
+        self.list_orgs()
+
+    def cmd_setup(self, options):
         """Set up the client for configuration"""
         if os.path.isfile(CONFIG):
             os.remove(CONFIG)
@@ -123,13 +129,13 @@ class TrelloClient:
         options = parser.parse_args()
 
         if not os.path.isfile(CONFIG) or options.which is 'reconfig':
-            self.setup()
+            self.cmd_setup(options)
         elif options.which is 'board':
             self.read_config()
-            self.list_boards()
+            self.cmd_board_list(options)
         elif options.which is 'org':
             self.read_config()
-            self.list_orgs()
+            self.cmd_org_list(options)
 
 
 if __name__ == '__main__':
