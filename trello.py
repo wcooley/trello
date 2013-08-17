@@ -87,7 +87,8 @@ class TrelloClient:
         #print json
         return json
 
-    def list_boards(self, org=None):
+    def get_boards(self, org):
+
         if not org:
             url = 'members/my/boards?filter=open'
         else:
@@ -95,10 +96,13 @@ class TrelloClient:
 
         r = self.get(url)
 
-        print Fore.GREEN + 'Boards' + Fore.RESET
         for board in self.get_json(r):
-            print '  ' + board['name'] + ' (' + \
-                self.get_org(board['idOrganization'])['displayName'] + ')'
+            org_info = self.get_org(board['idOrganization'])
+
+            board_name = board['name']
+            board_id = board['id']
+
+            yield((org_info, board_name, board_id))
 
     def list_orgs(self, should_print=True):
         self._orgs = {}
@@ -121,6 +125,8 @@ class TrelloClient:
         return self._orgs
 
     def get_org(self, org_id=None):
+        if not org_id:
+            return
         try:
             return self._orgs[org_id]
         except KeyError:
@@ -133,7 +139,17 @@ class TrelloClient:
             return self._orgs[org['id']]
 
     def cmd_board_list(self, options):
-        self.list_boards(org=options.org)
+        org = options.org
+
+        print Fore.GREEN + 'Boards' + Fore.RESET
+
+        for board in self.get_boards(options.org):
+            if board[0]:
+                org_name = ' ({0})'.format(board[0]['displayName'])
+            else:
+                org_name = ''
+
+            print '  {1}{0} [{2}]'.format(org_name, *board[1:])
 
     def cmd_org_list(self, options):
         self.list_orgs()
