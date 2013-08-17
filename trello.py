@@ -72,6 +72,21 @@ class TrelloClient:
 
         return url
 
+    def get_json(self, result):
+
+        try:
+            json = result.json()
+        except ValueError, e:
+            if e.message == 'No JSON object could be decoded':
+                msg = e.message + "\nResponse: {0} {1}".format(result.status_code, result.text,)
+                msg = msg + "For URL '{0}'".format(result.url)
+                raise ValueError(msg)
+            else:
+                raise ValueError(e)
+
+        #print json
+        return json
+
     def list_boards(self, org=None):
         if not org:
             url = 'members/my/boards?filter=open'
@@ -81,7 +96,7 @@ class TrelloClient:
         r = self.get(url)
 
         print Fore.GREEN + 'Boards' + Fore.RESET
-        for board in r.json():
+        for board in self.get_json(r):
             print '  ' + board['name'] + ' (' + \
                 self.get_org(board['idOrganization'])['displayName'] + ')'
 
@@ -95,7 +110,7 @@ class TrelloClient:
             print '  %-15s %s' % ('Board Name', 'Board Display Name')
             print '  %-15s %s' % ('----------', '------------------')
 
-        for org in r.json():
+        for org in self.get_json(r):
             self._orgs[org['id']] = {
                 'name': org['name'],
                 'displayName': org['displayName']
@@ -110,7 +125,7 @@ class TrelloClient:
             return self._orgs[org_id]
         except KeyError:
             r = self.get('organizations/{0}'.format(org_id))
-            org = r.json()
+            org = self.get_json(r)
             self._orgs[org['id']] = {
                 'name': org['name'],
                 'displayName': org['displayName']
