@@ -168,6 +168,11 @@ class TrelloClient:
         card = self.get_json(r)
         return card
 
+    def get_list(self, listid):
+        r = self.get('lists/{0}'.format(listid))
+
+        return self.get_json(r)
+
     def get_lists(self, boardid):
         r = self.get('boards/{0}/lists/open'.format(boardid))
 
@@ -182,6 +187,11 @@ class TrelloClient:
         for tlist in self.get_lists(bid):
             print ' {1:<25} [{0}]'.format(*tlist)
 
+    def cmd_list_show(self, options):
+        lid = options.listid
+
+        cardlist = self.get_list(lid)
+        pprint(cardlist)
 
     def cmd_card_copy(self, options):
         print "Copying card {0.source} to new '{0.dest_name}'".format(options)
@@ -295,6 +305,10 @@ class TrelloClient:
         list_list = list_subparser.add_parser('list', help='List lists')
         list_list.add_argument('boardid', action='store', help='ID of board')
         list_list.set_defaults(func=self.cmd_list_list)
+
+        list_show = list_subparser.add_parser('show', help='Show list')
+        list_show.add_argument('listid', action='store', help='ID of list')
+        list_show.set_defaults(func=self.cmd_list_show)
 
         config_parser = subparsers.add_parser('reconfig',
                 help='Reconfigure the client')
