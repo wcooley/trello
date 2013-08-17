@@ -76,7 +76,7 @@ class TrelloClient:
         if not org:
             url = 'members/my/boards?filter=open'
         else:
-            url = 'organization/%s/boards?filter=open' % (org)
+            url = 'organization/{0}/boards?filter=open'.format(org)
 
         r = self.get(url)
 
@@ -128,9 +128,9 @@ class TrelloClient:
         if os.path.isfile(CONFIG):
             os.remove(CONFIG)
 
-        auth_url = self.furl('authorize?key=%s&name=%s&expiration=never&response_type='\
-                'token&scope=read,write' % (API_KEY, APP_NAME))
-        print 'Open %s in your web browser' % auth_url
+        auth_url = self.furl('authorize?key={0}&name={1}&expiration=never&response_type='\
+                'token&scope=read,write'.format(API_KEY, APP_NAME))
+        print 'Open {0} in your web browser'.format(auth_url)
         token = raw_input('Paste the token: ')
 
         config_file = open(CONFIG, 'w')
