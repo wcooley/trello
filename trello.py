@@ -8,7 +8,16 @@ if requests.__version__ < '1':
     raise ImportError('requests v{0} too old'.format(requests.__version__) +
         '; at least 1.0.0 required')
 
-from colorama import init, Fore
+try:
+    import colorama
+    from colorama import Fore
+except ImportError:
+    class colorama:
+        @staticmethod
+        def init(): pass
+    class Fore:
+        GREEN = ''
+        RESET = ''
 
 API_KEY = 'a65c7d23c318237578a5f27c76c74f8e'
 API_URL = 'https://api.trello.com/1/'
@@ -124,6 +133,6 @@ class TrelloClient:
 
 
 if __name__ == '__main__':
-    init() # Initialize colorama
+    colorama.init()
     client = TrelloClient()
     client.run()
