@@ -41,6 +41,29 @@ class TrelloClient:
         else:
             raise NoConfigException('Configuration file does not exists.')
 
+    def add_auth(self, hsh):
+        """ Add 'key' and 'token' fields to request parameters
+        """
+
+        if not 'params' in hsh:
+            hsh['params'] = {}
+
+        params = hsh['params']
+        params['key'] = API_KEY
+        params['token'] = self._config['token']
+
+    def get(self, url, **kwargs):
+        """ Wrapper to simplify building the URL & getting the request
+        """
+
+        self.add_auth(kwargs)
+        #print 'URL:', self.furl(url)
+
+        #print "Getting URL '{0}'".format(url)
+        r = requests.get(self.furl(url), **kwargs)
+        #r.raise_for_status()
+        return r
+
     def furl(self, url):
         """ Build a full URL by prepending API_URL
         """
@@ -51,13 +74,12 @@ class TrelloClient:
 
     def list_boards(self, org=None):
         if not org:
-            url = 'members/my/boards?filter=open&key=%s&token=%s' % (API_KEY,
-                self._config['token'])
+            url = 'members/my/boards?filter=open'
         else:
-            url = 'organization/%s/boards?filter=open&key=%s&token=%s' % (org,
-                API_KEY, self._config['token'])
+            url = 'organization/%s/boards?filter=open' % (org)
 
-        r = requests.get(self.furl(url))
+        r = self.get(url)
+
         print Fore.GREEN + 'Boards' + Fore.RESET
         for board in r.json():
             print '  ' + board['name'] + ' (' + \
@@ -66,8 +88,7 @@ class TrelloClient:
     def list_orgs(self, should_print=True):
         self._orgs = {}
 
-        r = requests.get(self.furl('members/my/organizations?key=%s&token=%s' % (
-            API_KEY, self._config['token'])))
+        r = self.get('members/my/organizations')
 
         if should_print:
             print Fore.GREEN + 'Organizations' + Fore.RESET
@@ -88,8 +109,7 @@ class TrelloClient:
         try:
             return self._orgs[org_id]
         except KeyError:
-            r = requests.get(self.furl('organizations/%s?key=%s&token=%s' % (
-                org_id, API_KEY, self._config['token'])))
+            r = self.get('organizations/{0}'.format(org_id))
             org = r.json()
             self._orgs[org['id']] = {
                 'name': org['name'],
