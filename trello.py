@@ -87,6 +87,14 @@ class TrelloClient:
         #print json
         return json
 
+    def get_cards(self, board):
+        r = self.get('boards/{0}/cards?filter=visible'.format(board))
+        cards = []
+        for card in self.get_json(r):
+            name = card['name'].splitlines()[0]
+            yield (card['id'], name)
+
+
     def get_boards(self, org):
 
         if not org:
@@ -134,6 +142,12 @@ class TrelloClient:
                 'displayName': org['displayName']
             }
             return self._orgs[org['id']]
+
+    def cmd_card_list(self, options):
+        print Fore.GREEN + 'Cards' + Fore.RESET
+
+        for x in self.get_cards(options.board):
+            print '{0:<25} {1}'.format(*x)
 
     def cmd_board_list(self, options):
         org = options.org
@@ -192,6 +206,14 @@ class TrelloClient:
 
         org_parser = subparsers.add_parser('orgs', help='List organizations')
         org_parser.set_defaults(func=self.cmd_org_list)
+
+        card_parser = subparsers.add_parser('card', help='cards')
+        card_subparser = card_parser.add_subparsers(help='card commands')
+
+        card_list = card_subparser.add_parser('list', help='List cards')
+        card_list.add_argument('-b', '--board', action='store', required=True,
+            help='Limit to cards on board')
+        card_list.set_defaults(func=self.cmd_card_list)
 
         config_parser = subparsers.add_parser('reconfig',
                 help='Reconfigure the client')
