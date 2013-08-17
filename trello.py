@@ -64,6 +64,11 @@ class TrelloClient:
         #r.raise_for_status()
         return r
 
+    def post(self, url, data, **kwargs):
+        self.add_auth(kwargs)
+        r = requests.post(self.furl(url), data, **kwargs)
+        return r
+
     def furl(self, url):
         """ Build a full URL by prepending API_URL
         """
