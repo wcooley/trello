@@ -144,6 +144,12 @@ class TrelloClient:
             return self._orgs[org['id']]
 
 
+    def get_card(self, cardid):
+        r = self.get('cards/{0}'.format(cardid))
+
+        card = self.get_json(r)
+        return card
+
     def get_lists(self, boardid):
         r = self.get('boards/{0}/lists/open'.format(boardid))
 
@@ -157,6 +163,23 @@ class TrelloClient:
 
         for tlist in self.get_lists(bid):
             print ' {1:<25} [{0}]'.format(*tlist)
+
+
+    def cmd_card_show(self, options):
+
+        card = self.get_card(options.cardid)
+        pprint(card)
+        print
+
+        print 'Name: {name}\nId: {id}\nURL: {url}'.format(**card)
+
+        if card['desc']:
+            print 'Description: {desc}'.format(**card)
+
+        if card['due']:
+            print 'Due: {due}'.format(**card)
+
+        #if card['
 
     def cmd_card_list(self, options):
         print Fore.GREEN + 'Cards' + Fore.RESET
@@ -229,6 +252,10 @@ class TrelloClient:
         card_list.add_argument('-b', '--board', action='store', required=True,
             help='Limit to cards on board')
         card_list.set_defaults(func=self.cmd_card_list)
+
+        card_show = card_subparser.add_parser('show', help='Show a card')
+        card_show.add_argument('cardid', action='store', help='ID of card to show')
+        card_show.set_defaults(func=self.cmd_card_show)
 
         list_parser = subparsers.add_parser('list', help='board lists')
         list_subparser = list_parser.add_subparsers(help='list commands')
