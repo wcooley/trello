@@ -148,6 +148,17 @@ class TrelloClient:
             }
             return self._orgs[org['id']]
 
+    def copy_card(self, sourceid, dest_name, dest_listid):
+        params = {
+            'name': dest_name,
+            'idCardSource': sourceid,
+            'idList': dest_listid,
+            'keepFromSource': ['checklists'],
+        }
+
+        r = self.post('cards', params)
+
+        return self.get_json(r)
 
     def get_card(self, cardid):
         r = self.get('cards/{0}'.format(cardid))
@@ -169,6 +180,11 @@ class TrelloClient:
         for tlist in self.get_lists(bid):
             print ' {1:<25} [{0}]'.format(*tlist)
 
+
+    def cmd_card_copy(self, options):
+        print "Copying card {0.source} to new '{0.dest_name}'".format(options)
+        card = self.copy_card(options.source, options.dest_name, options.dest_listid)
+        print 'ID: {id}\nURL: {url}'.format(**card)
 
     def cmd_card_show(self, options):
 
@@ -261,6 +277,15 @@ class TrelloClient:
         card_show = card_subparser.add_parser('show', help='Show a card')
         card_show.add_argument('cardid', action='store', help='ID of card to show')
         card_show.set_defaults(func=self.cmd_card_show)
+
+        card_copy = card_subparser.add_parser('copy', help='Copy card')
+        card_copy.add_argument('--destlist', '-L', action='store', required=True,
+                help='Destination list', dest='dest_listid')
+        card_copy.add_argument('source', action='store',
+                help='Card ID to copy from')
+        card_copy.add_argument('dest_name', action='store',
+                help='Name of copied card')
+        card_copy.set_defaults(func=self.cmd_card_copy)
 
         list_parser = subparsers.add_parser('list', help='board lists')
         list_subparser = list_parser.add_subparsers(help='list commands')
