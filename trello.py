@@ -268,6 +268,7 @@ class TrelloClientCLI(object):
         token = raw_input('Paste the token: ')
 
         config_file = open(CONFIG, 'w')
+        os.chmod(CONFIG, 0600)
         config_file.write(json.dumps({'token': token}))
         config_file.close()
 
