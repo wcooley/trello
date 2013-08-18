@@ -31,16 +31,9 @@ class NoConfigException(Exception):
 
 class TrelloClient(object):
 
-    def __init__(self):
-        self.read_config()
+    def __init__(self, config={}):
+        self._config = config
         self._orgs = {}
-
-    def read_config(self):
-        if os.path.isfile(CONFIG):
-            config_file = open(CONFIG, 'r')
-            self._config = json.loads(config_file.read())
-        else:
-            raise NoConfigException('Configuration file does not exists.')
 
     def add_auth(self, hsh):
         """ Add 'key' and 'token' fields to request parameters
@@ -189,30 +182,31 @@ class TrelloClientCLI(object):
         else:
             raise NoConfigException('Configuration file does not exists.')
 
+        return self._config
 
     # Command line sub-commands
-    def cmd_list_list(self, options):
+    def cmd_list_list(self, client, options):
         bid = options.boardid
 
         print Fore.GREEN + 'Lists for board ID {0}'.format(bid) + Fore.RESET
 
-        for tlist in TrelloClient().get_lists(bid):
+        for tlist in client.get_lists(bid):
             print ' {1:<25} [{0}]'.format(*tlist)
 
-    def cmd_list_show(self, options):
+    def cmd_list_show(self, client, options):
         lid = options.listid
 
-        cardlist = TrelloClient().get_list(lid)
+        cardlist = client.get_list(lid)
         pprint(cardlist)
 
-    def cmd_card_copy(self, options):
+    def cmd_card_copy(self, client, options):
         print "Copying card {0.source} to new '{0.dest_name}'".format(options)
         card = TrelloClient().copy_card(options.source, options.dest_name, options.dest_listid)
         print 'ID: {id}\nURL: {url}'.format(**card)
 
-    def cmd_card_show(self, options):
+    def cmd_card_show(self, client, options):
 
-        card = TrelloClient().get_card(options.cardid)
+        card = client.get_card(options.cardid)
         pprint(card)
         print
 
@@ -226,18 +220,18 @@ class TrelloClientCLI(object):
 
         #if card['
 
-    def cmd_card_list(self, options):
+    def cmd_card_list(self, client, options):
         print Fore.GREEN + 'Cards' + Fore.RESET
 
-        for x in TrelloClient().get_cards(options.board):
+        for x in client.get_cards(options.board):
             print '{0:<25} {1}'.format(*x)
 
-    def cmd_board_list(self, options):
+    def cmd_board_list(self, client, options):
         org = options.org
 
         print Fore.GREEN + 'Boards' + Fore.RESET
 
-        for board in TrelloClient().get_boards(options.org):
+        for board in client.get_boards(options.org):
             if board[0]:
                 org_name = ' ({0})'.format(board[0]['displayName'])
             else:
@@ -245,21 +239,21 @@ class TrelloClientCLI(object):
 
             print '  {1}{0} [{2}]'.format(org_name, *board[1:])
 
-    def cmd_org_list(self, options):
+    def cmd_org_list(self, client, options):
 
         print Fore.GREEN + 'Organizations' + Fore.RESET
         print '  {0:<15} {1}'.format('Board Name', 'Board Display Name')
         print '  {0:<15} {1}'.format('----------', '------------------')
 
-        for org in TrelloClient().get_orgs():
+        for org in client.get_orgs():
             print '  {0:<15s} {1}'.format(*org[1:])
 
-    def cmd_setup(self, options):
+    def cmd_setup(self, client, options):
         """Set up the client for configuration"""
         if os.path.isfile(CONFIG):
             os.remove(CONFIG)
 
-        auth_url = self.furl('authorize?key={0}&name={1}&expiration=never&response_type='\
+        auth_url = client.furl('authorize?key={0}&name={1}&expiration=never&response_type='\
                 'token&scope=read,write'.format(API_KEY, APP_NAME))
 
         if os.sys.platform == 'darwin':
@@ -324,11 +318,17 @@ class TrelloClientCLI(object):
                   .set_defaults(func=self.cmd_setup)
 
         args = parser.parse_args()
+        try:
+            config = self.read_config()
+        except NoConfigException:
+            config = {}
+
+        client = TrelloClient(config)
 
         if not os.path.isfile(CONFIG):
-            self.cmd_setup(args)
+            self.cmd_setup(client, args)
         else:
-            args.func(args)
+            args.func(client, args)
 
 
 if __name__ == '__main__':
