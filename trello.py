@@ -278,8 +278,8 @@ class TrelloClient:
         org_parser = subparsers.add_parser('orgs', help='List organizations')
         org_parser.set_defaults(func=self.cmd_org_list)
 
-        card_parser = subparsers.add_parser('card', help='cards')
-        card_subparser = card_parser.add_subparsers(help='card commands')
+        card_subparser = subparsers.add_parser('card', help='cards') \
+                                   .add_subparsers(help='card commands')
 
         card_list = card_subparser.add_parser('list', help='List cards')
         card_list.add_argument('-b', '--board', action='store', required=True,
@@ -299,8 +299,8 @@ class TrelloClient:
                 help='Name of copied card')
         card_copy.set_defaults(func=self.cmd_card_copy)
 
-        list_parser = subparsers.add_parser('list', help='board lists')
-        list_subparser = list_parser.add_subparsers(help='list commands')
+        list_subparser = subparsers.add_parser('list', help='board lists') \
+                                   .add_subparsers(help='list commands')
 
         list_list = list_subparser.add_parser('list', help='List lists')
         list_list.add_argument('boardid', action='store', help='ID of board')
@@ -310,9 +310,8 @@ class TrelloClient:
         list_show.add_argument('listid', action='store', help='ID of list')
         list_show.set_defaults(func=self.cmd_list_show)
 
-        config_parser = subparsers.add_parser('reconfig',
-                help='Reconfigure the client')
-        config_parser.set_defaults(func=self.cmd_setup)
+        subparsers.add_parser('reconfig', help='Reconfigure the client') \
+                  .set_defaults(func=self.cmd_setup)
 
         args = parser.parse_args()
 
