@@ -32,8 +32,7 @@ class NoConfigException(Exception):
 class TrelloClient(object):
 
     def __init__(self):
-        self._config = {}
-        self._boards = {}
+        self.read_config()
         self._orgs = {}
 
     def read_config(self):
@@ -178,29 +177,42 @@ class TrelloClient(object):
 
         return [ (l['id'], l['name']) for l in self.get_json(r) ]
 
+class TrelloClientCLI(object):
+
+    def __init__(self):
+        self._config = {}
+
+    def read_config(self):
+        if os.path.isfile(CONFIG):
+            config_file = open(CONFIG, 'r')
+            self._config = json.loads(config_file.read())
+        else:
+            raise NoConfigException('Configuration file does not exists.')
+
+
     # Command line sub-commands
     def cmd_list_list(self, options):
         bid = options.boardid
 
         print Fore.GREEN + 'Lists for board ID {0}'.format(bid) + Fore.RESET
 
-        for tlist in self.get_lists(bid):
+        for tlist in TrelloClient().get_lists(bid):
             print ' {1:<25} [{0}]'.format(*tlist)
 
     def cmd_list_show(self, options):
         lid = options.listid
 
-        cardlist = self.get_list(lid)
+        cardlist = TrelloClient().get_list(lid)
         pprint(cardlist)
 
     def cmd_card_copy(self, options):
         print "Copying card {0.source} to new '{0.dest_name}'".format(options)
-        card = self.copy_card(options.source, options.dest_name, options.dest_listid)
+        card = TrelloClient().copy_card(options.source, options.dest_name, options.dest_listid)
         print 'ID: {id}\nURL: {url}'.format(**card)
 
     def cmd_card_show(self, options):
 
-        card = self.get_card(options.cardid)
+        card = TrelloClient().get_card(options.cardid)
         pprint(card)
         print
 
@@ -217,7 +229,7 @@ class TrelloClient(object):
     def cmd_card_list(self, options):
         print Fore.GREEN + 'Cards' + Fore.RESET
 
-        for x in self.get_cards(options.board):
+        for x in TrelloClient().get_cards(options.board):
             print '{0:<25} {1}'.format(*x)
 
     def cmd_board_list(self, options):
@@ -225,7 +237,7 @@ class TrelloClient(object):
 
         print Fore.GREEN + 'Boards' + Fore.RESET
 
-        for board in self.get_boards(options.org):
+        for board in TrelloClient().get_boards(options.org):
             if board[0]:
                 org_name = ' ({0})'.format(board[0]['displayName'])
             else:
@@ -239,7 +251,7 @@ class TrelloClient(object):
         print '  {0:<15} {1}'.format('Board Name', 'Board Display Name')
         print '  {0:<15} {1}'.format('----------', '------------------')
 
-        for org in self.get_orgs():
+        for org in TrelloClient().get_orgs():
             print '  {0:<15s} {1}'.format(*org[1:])
 
     def cmd_setup(self, options):
@@ -316,11 +328,10 @@ class TrelloClient(object):
         if not os.path.isfile(CONFIG):
             self.cmd_setup(args)
         else:
-            self.read_config()
             args.func(args)
 
 
 if __name__ == '__main__':
     colorama.init()
-    client = TrelloClient()
+    client = TrelloClientCLI()
     client.run()
