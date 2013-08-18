@@ -29,7 +29,7 @@ from pprint import pprint
 class NoConfigException(Exception):
     pass
 
-class TrelloClient:
+class TrelloClient(object):
 
     def __init__(self):
         self._config = {}
