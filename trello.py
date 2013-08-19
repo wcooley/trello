@@ -42,9 +42,8 @@ class TrelloClient(object):
         if not 'params' in hsh:
             hsh['params'] = {}
 
-        params = hsh['params']
-        params['key'] = API_KEY
-        params['token'] = self._config['token']
+        hsh['params']['key'] = API_KEY
+        hsh['params']['token'] = self._config['token']
 
     def get(self, url, **kwargs):
         """ Wrapper to simplify building the URL & getting the request
