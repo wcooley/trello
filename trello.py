@@ -200,7 +200,7 @@ class TrelloClientCLI(object):
 
     def cmd_card_copy(self, client, options):
         print "Copying card {0.source} to new '{0.dest_name}'".format(options)
-        card = TrelloClient().copy_card(options.source, options.dest_name, options.dest_listid)
+        card = client.copy_card(options.source, options.dest_name, options.dest_listid)
         print 'ID: {id}\nURL: {url}'.format(**card)
 
     def cmd_card_show(self, client, options):
