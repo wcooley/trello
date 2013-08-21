@@ -55,12 +55,12 @@ class TrelloClient(object):
         #print "Getting URL '{0}'".format(url)
         r = requests.get(self.furl(url), **kwargs)
         #r.raise_for_status()
-        return r
+        return self.get_json(r)
 
     def post(self, url, data, **kwargs):
         self.add_auth(kwargs)
         r = requests.post(self.furl(url), data, **kwargs)
-        return r
+        return self.get_json(r)
 
     def furl(self, url):
         """ Build a full URL by prepending API_URL
@@ -82,14 +82,14 @@ class TrelloClient(object):
             else:
                 raise ValueError(e)
 
-        #print json
         return json
 
     def get_cards(self, board):
         """ Generator of TrelloCards from a given board ID """
-        r = self.get('boards/{0}/cards?filter=visible'.format(board))
-        cards = []
-        for card in self.get_json(r):
+
+        url  = 'boards/{0}/cards?filter=visible'.format(board)
+
+        for card in self.get(url):
             yield TrelloCard(card)
 
     def get_boards(self, org):
@@ -99,21 +99,19 @@ class TrelloClient(object):
         else:
             url = 'organization/{0}/boards?filter=open'.format(org)
 
-        r = self.get(url)
-
-        for board in self.get_json(r):
+        for board in self.get(url):
             yield TrelloBoard(board)
 
     def get_orgs(self):
 
-        r = self.get('members/my/organizations')
+        url = 'members/my/organizations'
 
-        for org in self.get_json(r):
+        for org in self.get(url):
             yield TrelloOrg(org)
 
     def get_org(self, org_id=None):
-        r = self.get('organizations/{0}'.format(org_id))
-        return TrelloOrg(self.get_json(r))
+        url = 'organizations/{0}'.format(org_id)
+        return TrelloOrg(self.get(url))
 
     def copy_card(self, sourceid, dest_name, dest_listid):
         params = {
@@ -123,24 +121,22 @@ class TrelloClient(object):
             'keepFromSource': ['checklists'],
         }
 
-        r = self.post('cards', params)
-
-        return TrelloCard(self.get_json(r))
+        return TrelloCard(self.post('card', params))
 
     def get_card(self, cardid):
-        r = self.get('cards/{0}'.format(cardid))
+        url = 'cards/{0}'.format(cardid)
 
-        return TrelloCard(self.get_json(r))
+        return TrelloCard(self.get(url))
 
     def get_list(self, listid):
-        r = self.get('lists/{0}'.format(listid))
+        url = 'lists/{0}'.format(listid)
 
-        return TrelloList(self.get_json(r))
+        return TrelloList(self.get(url))
 
     def get_lists(self, boardid):
-        r = self.get('boards/{0}/lists/open'.format(boardid))
+        url = 'boards/{0}/lists/open'.format(boardid)
 
-        for lst in self.get_json(r):
+        for lst in self.get(url):
             yield TrelloList(lst)
 
 class DictWrapper(object):
