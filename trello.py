@@ -148,10 +148,16 @@ class TrelloClient(object):
 
         return TrelloCard(self.post('card', params))
 
-    def get_card(self, cardid):
-        url = 'cards/{0}'.format(cardid)
+    def get_card(self, id=None, name=None):
 
-        return TrelloCard(self.get(url))
+        if id:
+            result = self.get('cards/{0}'.format(id))
+        elif name:
+            result = self.search_for_one('cards', name)
+        else: pass
+            # FIXME: Raise appropriate exception
+
+        return TrelloCard(result)
 
     def get_list(self, listid):
         url = 'lists/{0}'.format(listid)
@@ -225,7 +231,7 @@ class TrelloClientCLI(object):
 
     def cmd_card_show(self, client, options):
 
-        card = client.get_card(options.cardid)
+        card = client.get_card(name=options.card)
         #pprint(card)
 
         print 'Name: {0.name}\nId: {0.id}\nURL: {0.url}'.format(card)
@@ -323,7 +329,7 @@ class TrelloClientCLI(object):
         card_list.set_defaults(func=self.cmd_card_list)
 
         card_show = card_subparser.add_parser('show', help='Show a card')
-        card_show.add_argument('cardid', help='ID of card to show')
+        card_show.add_argument('card', help='Name of card to show')
         card_show.set_defaults(func=self.cmd_card_show)
 
         card_copy = card_subparser.add_parser('copy', help='Copy card')
