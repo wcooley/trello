@@ -92,6 +92,13 @@ class TrelloClient(object):
         for card in self.get(url):
             yield TrelloCard(card)
 
+    def get_board(self, board_id):
+        if board_id:
+            url = 'boards/{0}'.format(board_id)
+            result = self.get(url)
+
+        return TrelloBoard(result)
+
     def get_boards(self, org):
 
         if not org:
@@ -229,6 +236,12 @@ class TrelloClientCLI(object):
                 org_name = ' ({0})'.format(org.name)
             print '  {1.name}{0} [{1.id}]'.format(org_name, board)
 
+    def cmd_board_show(self, client, options):
+        board = client.get_board(options.boardid)
+        print 'Name: {0.name}\nURL: {0.url}'.format(board)
+        #pprint(board._data)
+        #print
+
     def cmd_org_list(self, client, options):
 
         print Fore.GREEN + 'Organizations' + Fore.RESET
@@ -267,10 +280,18 @@ class TrelloClientCLI(object):
     def run(self):
         parser = argparse.ArgumentParser()
         subparsers = parser.add_subparsers(help='commands')
-        board_parser = subparsers.add_parser('boards', help='Board operations')
-        board_parser.add_argument('-o', '--org', help='''List
+
+        board_subparser = subparsers.add_parser('board', help='boards') \
+                                    .add_subparsers(help='board commands')
+
+        board_list = board_subparser.add_parser('list', help='List boards')
+        board_list.add_argument('-o', '--org', help='''List
             boards for specific organizations''')
-        board_parser.set_defaults(func=self.cmd_board_list)
+        board_list.set_defaults(func=self.cmd_board_list)
+
+        board_show = board_subparser.add_parser('show', help='Show board')
+        board_show.add_argument('boardid', help='ID of board')
+        board_show.set_defaults(func=self.cmd_board_show)
 
         org_parser = subparsers.add_parser('orgs', help='List organizations')
         org_parser.set_defaults(func=self.cmd_org_list)
