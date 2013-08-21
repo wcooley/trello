@@ -92,10 +92,28 @@ class TrelloClient(object):
         for card in self.get(url):
             yield TrelloCard(card)
 
-    def get_board(self, board_id):
+    def search_for_one(self, modeltype, name):
+        """ Search for a single type by name """
+        url = 'search'
+        params = {
+                'query': name,
+                'modelTypes': modeltype,
+                modeltype[:-1] + '_fields': 'all',
+                modeltype + '_limit': '1',
+        }
+
+        result = self.get(url, params=params)
+
+        return result[modeltype][0]
+
+    def get_board(self, board_id=None, board_name=None):
         if board_id:
             url = 'boards/{0}'.format(board_id)
             result = self.get(url)
+        elif board_name:
+            result = self.search_for_one('boards', board_name)
+        else: pass
+            # FIXME: Raise appropriate exception
 
         return TrelloBoard(result)
 
@@ -237,7 +255,7 @@ class TrelloClientCLI(object):
             print '  {1.name}{0} [{1.id}]'.format(org_name, board)
 
     def cmd_board_show(self, client, options):
-        board = client.get_board(options.boardid)
+        board = client.get_board(board_name=options.board_name)
         print 'Name: {0.name}\nURL: {0.url}'.format(board)
         #pprint(board._data)
         #print
@@ -290,7 +308,7 @@ class TrelloClientCLI(object):
         board_list.set_defaults(func=self.cmd_board_list)
 
         board_show = board_subparser.add_parser('show', help='Show board')
-        board_show.add_argument('boardid', help='ID of board')
+        board_show.add_argument('board_name', help='Name of board')
         board_show.set_defaults(func=self.cmd_board_show)
 
         org_parser = subparsers.add_parser('orgs', help='List organizations')
