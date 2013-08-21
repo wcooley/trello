@@ -86,12 +86,11 @@ class TrelloClient(object):
         return json
 
     def get_cards(self, board):
+        """ Generator of TrelloCards from a given board ID """
         r = self.get('boards/{0}/cards?filter=visible'.format(board))
         cards = []
         for card in self.get_json(r):
-            name = card['name'].splitlines()[0]
-            yield (card['id'], name)
-
+            yield TrelloCard(card)
 
     def get_boards(self, org):
 
@@ -103,43 +102,18 @@ class TrelloClient(object):
         r = self.get(url)
 
         for board in self.get_json(r):
-            org_info = self.get_org(board['idOrganization'])
-
-            board_name = board['name']
-            board_id = board['id']
-
-            yield((org_info, board_name, board_id))
+            yield TrelloBoard(board)
 
     def get_orgs(self):
 
-        if len(self._orgs) == 0:
-            r = self.get('members/my/organizations')
+        r = self.get('members/my/organizations')
 
-            for org in self.get_json(r):
-                self._orgs[org['id']] = {
-                    'name': org['name'],
-                    'displayName': org['displayName']
-                }
-
-                yield (org['id'], org['name'], org['displayName'])
-        else:
-            for orgid in self._orgs:
-                yield (orgid, self.orgs[orgid]['name'], self.orgs[orgid]['displayName'])
-
+        for org in self.get_json(r):
+            yield TrelloOrg(org)
 
     def get_org(self, org_id=None):
-        if not org_id:
-            return
-        try:
-            return self._orgs[org_id]
-        except KeyError:
-            r = self.get('organizations/{0}'.format(org_id))
-            org = self.get_json(r)
-            self._orgs[org['id']] = {
-                'name': org['name'],
-                'displayName': org['displayName']
-            }
-            return self._orgs[org['id']]
+        r = self.get('organizations/{0}'.format(org_id))
+        return TrelloOrg(self.get_json(r))
 
     def copy_card(self, sourceid, dest_name, dest_listid):
         params = {
@@ -151,23 +125,48 @@ class TrelloClient(object):
 
         r = self.post('cards', params)
 
-        return self.get_json(r)
+        return TrelloCard(self.get_json(r))
 
     def get_card(self, cardid):
         r = self.get('cards/{0}'.format(cardid))
 
-        card = self.get_json(r)
-        return card
+        return TrelloCard(self.get_json(r))
 
     def get_list(self, listid):
         r = self.get('lists/{0}'.format(listid))
 
-        return self.get_json(r)
+        return TrelloList(self.get_json(r))
 
     def get_lists(self, boardid):
         r = self.get('boards/{0}/lists/open'.format(boardid))
 
-        return [ (l['id'], l['name']) for l in self.get_json(r) ]
+        for lst in self.get_json(r):
+            yield TrelloList(lst)
+
+class DictWrapper(object):
+    _data = None
+
+    def __init__(self, data):
+        self._data = data
+
+    def __getattr__(self, attr):
+        return self._data[attr]
+
+    def __setattr__(self, attr, val):
+        if self._data:
+            self._data[attr] = val
+        else:
+            object.__setattr__(self, attr, val)
+
+class TrelloOrg(DictWrapper): pass
+class TrelloBoard(DictWrapper): pass
+class TrelloList(DictWrapper): pass
+class TrelloCard(DictWrapper):
+    @property
+    def short_name(self):
+        """Card names can have multiple lines, but we often only want one
+        line"""
+        return self.name.splitlines()[0]
 
 class TrelloClientCLI(object):
 
@@ -190,7 +189,7 @@ class TrelloClientCLI(object):
         print Fore.GREEN + 'Lists for board ID {0}'.format(bid) + Fore.RESET
 
         for tlist in client.get_lists(bid):
-            print ' {1:<25} [{0}]'.format(*tlist)
+            print ' {0.name:<25} [{0.id}]'.format(tlist)
 
     def cmd_list_show(self, client, options):
         lid = options.listid
@@ -201,42 +200,38 @@ class TrelloClientCLI(object):
     def cmd_card_copy(self, client, options):
         print "Copying card {0.source} to new '{0.dest_name}'".format(options)
         card = client.copy_card(options.source, options.dest_name, options.dest_listid)
-        print 'ID: {id}\nURL: {url}'.format(**card)
+        print 'ID: {0.id}\nURL: {0.url}'.format(card)
 
     def cmd_card_show(self, client, options):
 
         card = client.get_card(options.cardid)
-        pprint(card)
-        print
+        #pprint(card)
 
-        print 'Name: {name}\nId: {id}\nURL: {url}'.format(**card)
+        print 'Name: {0.name}\nId: {0.id}\nURL: {0.url}'.format(card)
 
-        if card['desc']:
-            print 'Description: {desc}'.format(**card)
+        if card.desc:
+            print 'Description: {0.desc}'.format(card)
 
-        if card['due']:
-            print 'Due: {due}'.format(**card)
-
-        #if card['
+        if card.due:
+            print 'Due: {0.due}'.format(card)
 
     def cmd_card_list(self, client, options):
         print Fore.GREEN + 'Cards' + Fore.RESET
 
-        for x in client.get_cards(options.board):
-            print '{0:<25} {1}'.format(*x)
+        for card in client.get_cards(options.board):
+            print '{0.id:<25} {0.short_name}'.format(card)
 
     def cmd_board_list(self, client, options):
         org = options.org
 
         print Fore.GREEN + 'Boards' + Fore.RESET
 
-        for board in client.get_boards(options.org):
-            if board[0]:
-                org_name = ' ({0})'.format(board[0]['displayName'])
-            else:
-                org_name = ''
-
-            print '  {1}{0} [{2}]'.format(org_name, *board[1:])
+        for board in client.get_boards(org):
+            org_name = ''
+            if board.idOrganization:
+                org = client.get_org(board.idOrganization)
+                org_name = ' ({0})'.format(org.name)
+            print '  {1.name}{0} [{1.id}]'.format(org_name, board)
 
     def cmd_org_list(self, client, options):
 
@@ -245,7 +240,7 @@ class TrelloClientCLI(object):
         print '  {0:<15} {1}'.format('----------', '------------------')
 
         for org in client.get_orgs():
-            print '  {0:<15s} {1}'.format(*org[1:])
+            print '  {0.name:<15s} {0.displayName}'.format(org)
 
     def cmd_setup(self, client, options):
         """Set up the client for configuration"""
