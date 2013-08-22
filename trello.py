@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+
+from urllib import urlencode
 import argparse
 import json
 import os
@@ -76,7 +78,8 @@ class TrelloClient(object):
             json = result.json()
         except ValueError, e:
             if e.message == 'No JSON object could be decoded':
-                msg = e.message + "\nResponse: {0} {1}".format(result.status_code, result.text,)
+                msg = e.message + "\nResponse: {0} {1}".format(
+                        result.status_code, result.text)
                 msg = msg + "For URL '{0}'".format(result.url)
                 raise ValueError(msg)
             else:
@@ -226,7 +229,8 @@ class TrelloClientCLI(object):
 
     def cmd_card_copy(self, client, options):
         print "Copying card {0.source} to new '{0.dest_name}'".format(options)
-        card = client.copy_card(options.source, options.dest_name, options.dest_listid)
+        card = client.copy_card(options.source,
+                options.dest_name, options.dest_listid)
         print 'ID: {0.id}\nURL: {0.url}'.format(card)
 
     def cmd_card_show(self, client, options):
@@ -280,8 +284,13 @@ class TrelloClientCLI(object):
         if os.path.isfile(CONFIG):
             os.remove(CONFIG)
 
-        auth_url = client.furl('authorize?key={0}&name={1}&expiration=never&response_type='\
-                'token&scope=read,write'.format(API_KEY, APP_NAME))
+        auth_url = client.furl('authorize?' + urlencode({
+                                'key': API_KEY,
+                                'name': APP_NAME,
+                                'expiration': 'never',
+                                'response_type': 'token',
+                                'scope': 'read,write'
+            }))
 
         if os.sys.platform == 'darwin':
             os.system("open '{0}'".format(auth_url))
