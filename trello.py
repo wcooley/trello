@@ -173,8 +173,8 @@ class TrelloClientCLI(object):
 
         card_copy = card_subparser.add_parser('copy', help='Copy card')
         card_copy.add_argument('--destlist', '-L', required=True,
-                help='Destination list', dest='dest_listid')
-        card_copy.add_argument('source', help='Card ID to copy from')
+                help='Destination list', dest='dest_listid', type=hex_string)
+        card_copy.add_argument('source', help='Card ID to copy from', type=hex_string)
         card_copy.add_argument('dest_name', help='Name of copied card')
         card_copy.set_defaults(func=self.cmd_card_copy)
 
@@ -182,11 +182,11 @@ class TrelloClientCLI(object):
                                    .add_subparsers(help='list commands')
 
         list_list = list_subparser.add_parser('list', help='List lists')
-        list_list.add_argument('boardid', help='ID of board')
+        list_list.add_argument('boardid', help='ID of board', type=hex_string)
         list_list.set_defaults(func=self.cmd_list_list)
 
         list_show = list_subparser.add_parser('show', help='Show list')
-        list_show.add_argument('listid', help='ID of list')
+        list_show.add_argument('listid', help='ID of list', type=hex_string)
         list_show.set_defaults(func=self.cmd_list_show)
 
         subparsers.add_parser('reconfig', help='Reconfigure the client') \
@@ -209,6 +209,10 @@ class TrelloClientCLI(object):
         else:
             args.func(client, args)
 
+def hex_string(s):
+    s = str(s)
+    int(s, 16)  # int will raise a ValueError if it does not convert
+    return s
 
 if __name__ == '__main__':
     colorama.init()
